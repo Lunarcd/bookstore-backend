@@ -1,0 +1,9 @@
+use-workspace-deps = "../../Cargo.toml"
+
+[package]
+name = "database"
+
+[types.crates]
+ctypes = { path = "../ctypes" }
+
+[types.mapping]

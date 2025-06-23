@@ -7,3 +7,4 @@ name = "database"
 ctypes = { path = "../ctypes" }
 
 [types.mapping]
+"public.role" = "ctypes::Role"

@@ -1,4 +1,4 @@
-use database::queries::account::Account;
+use database::queries::user::User;
 use lettre::{
     AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor, message::header::ContentType,
 };
@@ -9,7 +9,7 @@ use crate::{
 };
 
 pub async fn send(
-    receiver: &Account,
+    receiver: &User,
     subject: String,
     body: String,
     mailer: &AsyncSmtpTransport<Tokio1Executor>,

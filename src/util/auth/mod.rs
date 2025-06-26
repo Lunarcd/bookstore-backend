@@ -15,12 +15,8 @@ pub async fn authorize<const N: usize>(
     required_roles: [Role; N],
     database: &Object,
 ) -> Result<()> {
-    let account = match queries::account::get()
-        .bind(database, &claims.sub)
-        .opt()
-        .await
-    {
-        Ok(Some(account)) => account,
+    let user = match queries::user::get().bind(database, &claims.sub).opt().await {
+        Ok(Some(user)) => user,
         Ok(None) => {
             return Err(Error::builder()
                 .status(StatusCode::UNAUTHORIZED)
@@ -28,13 +24,13 @@ pub async fn authorize<const N: usize>(
                 .build());
         }
         Err(error) => {
-            tracing::error!(?error, "Failed to fetch account");
+            tracing::error!(?error, "Failed to fetch user");
 
             return Err(Error::internal());
         }
     };
 
-    if !required_roles.contains(&account.role) {
+    if !required_roles.contains(&user.role) {
         return Err(Error::builder()
             .status(StatusCode::FORBIDDEN)
             .message(format!("Require you to be one of {:?}", required_roles))

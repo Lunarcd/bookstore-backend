@@ -6,7 +6,6 @@ use utoipa::ToSchema;
 #[serde(rename_all = "snake_case")]
 pub enum Provider {
     Google,
-    Microsoft,
 }
 
 #[derive(Debug, Clone, Deserialize)]

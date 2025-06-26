@@ -1,0 +1,83 @@
+on:
+  workflow_dispatch:
+  push:
+    branches: main
+  pull_request:
+    branches: main
+
+permissions:
+  contents: read
+
+jobs:
+  eslint:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install dependencies
+        run: bun install
+      - name: Lint
+        run: bun run lint
+
+  clippy-fmt:
+    name: Check Clippy and rustfmt
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - name: Check Clippy
+        run: cargo clippy --workspace -- -D warnings
+      - name: Check rustfmt
+        run: cargo fmt --all -- --check
+
+  test:
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: ./backend
+    env:
+      PGHOST: localhost
+      PGDATABASE: ${{ secrets.PG_DB }}
+      PGUSERNAME: ${{ secrets.PG_USER }}
+      PGPASSWORD: ${{ secrets.PG_PASS }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            toolchain: stable
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          target: ${{ matrix.target }}
+          toolchain: ${{ matrix.toolchain }}
+      - run: ${{ matrix.deps }}
+      - uses: ikalnytskyi/action-setup-postgres@v7
+        id: postgres
+      - name: Init database
+        run: psql ${{ steps.postgres.outputs.connection-uri }} -a -f schema.sql
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            backend
+      - name: Test
+        env:
+          DATABASE_URL: ${{ steps.postgres.outputs.connection-uri }}
+        run: |
+          cargo test --target ${{ matrix.target }}
